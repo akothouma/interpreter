@@ -1,0 +1,19 @@
+var numbers = []int{1, 2, 3, 4, 5}
+fmt.Println numbers
+fmt.Println numbers[2]
+numbers[1] = 10
+fmt.Println numbers
+var empty = []int
+fmt.Println empty
+append empty = 20
+append empty = 30
+fmt.Println empty
+var x = 5
+fmt.Println x
+x = x + numbers[0]
+fmt.Println x
+numbers[4] = numbers[3] + 1
+fmt.Println numbers
+fmt.Println numbers[10]
+var invalid = []int{1, two, 3}
+unknown[0] = 5

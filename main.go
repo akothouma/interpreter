@@ -1,63 +1,62 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"strconv"
-	"strings"
+	"os"
 )
 
-// Store variables
-var variables = make(map[string]int)
-
-// Tokenize input into commands
-func tokenize(input string) []string {
-	return strings.Fields(input)
-}
-
-// Interpret and execute commands
-func interpret(tokens []string) {
-	if len(tokens) == 0 {
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Please provide a file name as an argument")
 		return
 	}
 
-	switch tokens[0] {
-	case "print":
-		if len(tokens) > 1 {
-			if val, ok := variables[tokens[1]]; ok {
-				fmt.Println(val)
-			} else {
-				fmt.Println(tokens[1])
-			}
-		}
-	case "let":
-		if len(tokens) == 4 && tokens[2] == "=" {
-			val, err := strconv.Atoi(tokens[3])
-			if err != nil {
-				fmt.Println("Invalid value")
-				return
-			}
-			variables[tokens[1]] = val
-		}
-	case "add":
-		if len(tokens) == 4 && tokens[2] == "to" {
-			if val, ok := variables[tokens[1]]; ok {
-				if addend, err := strconv.Atoi(tokens[3]); err == nil {
-					variables[tokens[1]] = val + addend
-				}
-			}
-		}
-	default:
-		fmt.Println("Unknown command")
+	file, err := os.Open(os.Args[1])
+	if err != nil {
+		fmt.Printf("Error opening file: %v\n", err)
+		return
+	}
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+	interpreter := NewInterpreter(reader)
+	interpreter.Run()
+}
+
+type Interpreter struct {
+	lexer   *Lexer
+	parser  *Parser
+	memory  *MemoryManager
+	scanner *bufio.Scanner
+}
+
+func NewInterpreter(reader *bufio.Reader) *Interpreter {
+	return &Interpreter{
+		lexer:   &Lexer{},
+		parser:  &Parser{},
+		memory:  NewMemoryManager(),
+		scanner: bufio.NewScanner(reader),
 	}
 }
 
-func main() {
-	for {
-		var input string
-		fmt.Print(">> ")
-		fmt.Scanln(&input)
+func (i *Interpreter) Run() {
+	for i.scanner.Scan() {
+		line := i.scanner.Text()
+		tokens := i.lexer.Tokenize(line)
+		command, err := i.parser.Parse(tokens)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			continue
+		}
 
-		tokens := tokenize(input)
-		interpret(tokens)
+		err = command.Execute(i.memory)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+		}
+	}
+
+	if err := i.scanner.Err(); err != nil {
+		fmt.Printf("Error reading input: %v\n", err)
 	}
 }
